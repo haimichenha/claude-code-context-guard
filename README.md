@@ -6,6 +6,7 @@ It provides:
 
 - startup-time repair for `opus[1m]`, `permissions.defaultMode=auto`, and cc-switch provider settings;
 - optional virtual 1.4M client-side context patch with `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=72`;
+- ordinary-provider fallback window patch from 200k to 300k, so 72% auto-compact triggers around 201.6k instead of ~130k;
 - automatic fallback to safe 1M when context-length errors are detected;
 - medium-detail compact handoff policy;
 - model-driven captured-output workflow through `ccrun`;
@@ -68,6 +69,7 @@ Expected experimental mode output includes:
 ```text
 [OK] settings autoCompactWindow: 1400000
 [OK] cli [1m] returns 1.4m
+[OK] ordinary fallback window 300k
 [OK] /rename strips optional brackets
 [CALC] compact_threshold≈993,600 tokens
 [RESULT] PASS
@@ -82,4 +84,4 @@ python $env:USERPROFILE\.claude\scripts\ensure-claude-context-policy.py --enable
 
 ## Notes
 
-The virtual 1.4M patch is not intended to push requests to 1.36M tokens. With `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=72`, the target auto-compact threshold is around 993.6K tokens, closer to a practical 1M boundary than the default ~967K.
+The virtual 1.4M patch is not intended to push requests to 1.36M tokens. With `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=72`, the target auto-compact threshold is around 993.6K tokens, closer to a practical 1M boundary than the default ~967K. If a session falls back to a non-`[1m]` model path, the guard raises Claude Code's ordinary fallback window to 300K so auto-compact occurs around 201.6K rather than around 130K.

@@ -33,6 +33,7 @@ def main():
     passed &= ok('/rename usage hint', 'Usage: /rename <name>' in s and 'Usage: /rename [name]' not in s)
     passed &= ok('/rename strips optional brackets', 'else z=_.trim().replace(/^\\[(.*)\\]$/,"$1").trim();' in s)
     passed &= ok('/rename argumentHint', 'argumentHint:"<name>"' in s and 'argumentHint:"[name]"' not in s)
+    passed &= ok('ordinary fallback window 300k', 'var DR1=300000,Po6=20000,UO_=32000,QO_=128000,pgq=8000;' in s)
     # Threshold model from located minified code:
     reserved_summary=min(20_000, 20_000)
     effective=target_window-reserved_summary
@@ -42,6 +43,9 @@ def main():
     print(f"[CALC] target_window={target_window:,} effective={effective:,} compact_threshold≈{threshold:,} tokens")
     if not disabled:
         print(f"[CALC] old_1m_threshold≈967,000; new_threshold_delta≈{threshold-967000:+,} tokens")
+    ordinary_effective=300_000-reserved_summary
+    ordinary_threshold=int(ordinary_effective*0.72)
+    print(f"[CALC] ordinary_model_window=300,000 ordinary_compact_threshold≈{ordinary_threshold:,} tokens")
     if CCDB.exists():
         conn=sqlite3.connect(CCDB)
         common=json.loads(conn.execute("select value from settings where key='common_config_claude'").fetchone()[0])

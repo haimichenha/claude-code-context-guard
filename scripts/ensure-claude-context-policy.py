@@ -20,6 +20,7 @@ PKG_JSON = CLAUDE_CODE_DIR / "package.json"
 TARGET_MODEL = "opus[1m]"
 EXPERIMENTAL_WINDOW = 1_400_000
 SAFE_WINDOW = 1_000_000
+DEFAULT_WINDOW = 300_000
 EXPERIMENTAL_PCT = "72"
 POLICY_START = "<!-- CLAUDE_CONTEXT_POLICY_START -->"
 POLICY_END = "<!-- CLAUDE_CONTEXT_POLICY_END -->"
@@ -204,8 +205,19 @@ def patch_cli(backup_root: Path) -> list[str]:
     if hint_new in text: rename_hits+=1
     else: actions.append('WARN missing rename argumentHint anchor')
 
-    total_hits=len(replacements)+3
-    hits += rename_hits
+    # Lift the non-[1m] fallback model window. Claude Code defaults DR1 to 200k;
+    # with the global 72% autocompact override this compacts around 130k. Raising
+    # DR1 to 300k makes ordinary-provider sessions compact around 200k while
+    # leaving [1m] sessions on the separate 1.4m path.
+    default_old='var DR1=200000,Po6=20000,UO_=32000,QO_=128000,pgq=8000;'
+    default_new='var DR1=300000,Po6=20000,UO_=32000,QO_=128000,pgq=8000;'
+    default_hit=0
+    if default_old in text: text=text.replace(default_old,default_new,1)
+    if default_new in text: default_hit=1
+    else: actions.append('WARN missing default context window anchor')
+
+    total_hits=len(replacements)+3+1
+    hits += rename_hits + default_hit
     if text != original:
         backup_file(CLI_JS, backup_root); CLI_JS.write_text(text,encoding="utf-8"); actions.append(f"{label}; ensured /rename patch for version {get_cli_version()}")
     elif hits == total_hits:

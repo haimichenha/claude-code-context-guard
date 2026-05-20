@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.2
+
+- Raise ordinary non-`[1m]` fallback context window from 200K to 300K, making 72% auto-compact trigger around 201.6K.
+
 ## 0.1.1
 
 - Add persistent `/rename` patch to the startup guard and validator.
