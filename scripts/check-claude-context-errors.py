@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 HOME=Path.home(); CLAUDE=HOME/'.claude'; STATE=CLAUDE/'context-policy-state.json'; ENSURE=CLAUDE/'scripts'/'ensure-claude-context-policy.py'
-PATTERNS=[r'prompt[_ -]?too[_ -]?long', r'context[_ -]?length[_ -]?exceeded', r'maximum context length', r'413', r'request too large', r'token limit', r'input.*too large']
+PATTERNS=[r'prompt[_ -]?too[_ -]?long', r'context[_ -]?length[_ -]?exceeded', r'maximum context length', r'request too large', r'payload too large', r'token limit', r'input.*too large', r'(?:status|error|api|http|response|request)[^\n]{0,80}\b413\b', r'\b413\b[^\n]{0,80}(?:request too large|payload too large|prompt|context)']
 RX=re.compile('|'.join(PATTERNS), re.I|re.S)
 
 def load():
@@ -23,15 +23,24 @@ def recent_files():
                 try:
                     if p.stat().st_mtime>=cutoff: files.append(p)
                 except Exception: pass
-    h=CLAUDE/'history.jsonl'
-    if h.exists(): files.append(h)
+    # Do not scan history.jsonl: it stores user-entered prompts/pasted summaries and can
+    # mention strings like prompt_too_long/API 413 without an actual Claude API failure.
     return sorted(set(files), key=lambda p: p.stat().st_mtime if p.exists() else 0, reverse=True)[:80]
 def tail_text(p: Path, max_bytes=400000):
     try:
         with p.open('rb') as f:
             try: f.seek(-max_bytes, os.SEEK_END)
             except OSError: f.seek(0)
-            return f.read().decode('utf-8','replace')
+            raw=f.read().decode('utf-8','replace')
+        # Project/session jsonl also contains ordinary user/assistant conversation text.
+        # Only inspect lines that look like machine/tool/API error records, so discussions
+        # about prompt_too_long, context_length_exceeded, or API 413 do not trigger rollback.
+        kept=[]
+        markers=('"type":"error"','"level":"error"','"is_error":true','"error":','statusCode','status_code','APIError','HTTPError')
+        for line in raw.splitlines():
+            if any(m in line for m in markers):
+                kept.append(line)
+        return '\n'.join(kept)
     except Exception: return ''
 def main():
     hit=None

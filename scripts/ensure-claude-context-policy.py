@@ -179,10 +179,39 @@ def patch_cli(backup_root: Path) -> list[str]:
     for old,new in replacements:
         if old in text: text=text.replace(old,new,1); hits+=1
         elif new in text: hits+=1
-        else: actions.append('WARN missing patch anchor: '+old[:80])
-    if text != original: backup_file(CLI_JS, backup_root); CLI_JS.write_text(text,encoding="utf-8"); actions.append(f"{label} for version {get_cli_version()}")
-    elif hits == len(replacements): actions.append(f"Claude Code cli.js already in desired context mode for version {get_cli_version()}")
-    else: actions.append(f"WARN Claude Code cli.js patch incomplete for version {get_cli_version()}")
+        else: actions.append('WARN missing context patch anchor: '+old[:80])
+
+    # Always keep the /rename UX patch, independent of experimental 1.4m mode:
+    # - display /rename <name> instead of /rename [name]
+    # - accept both /rename title and /rename [title]
+    # - strip only one outer [] pair from explicitly bracketed input
+    rename_hits=0
+    prompt_old='Usage: /rename [name]'
+    prompt_new='Usage: /rename <name>'
+    if prompt_old in text: text=text.replace(prompt_old,prompt_new,1)
+    if prompt_new in text: rename_hits+=1
+    else: actions.append('WARN missing rename usage anchor')
+
+    parser_old='else z=_.trim();let Y=I8(),A=bY();await AN(Y,z,A);'
+    parser_new='else z=_.trim().replace(/^\\[(.*)\\]$/,"$1").trim();let Y=I8(),A=bY();await AN(Y,z,A);'
+    if parser_old in text: text=text.replace(parser_old,parser_new,1)
+    if parser_new in text: rename_hits+=1
+    else: actions.append('WARN missing rename parser anchor')
+
+    hint_old='argumentHint:"[name]"'
+    hint_new='argumentHint:"<name>"'
+    if hint_old in text: text=text.replace(hint_old,hint_new,1)
+    if hint_new in text: rename_hits+=1
+    else: actions.append('WARN missing rename argumentHint anchor')
+
+    total_hits=len(replacements)+3
+    hits += rename_hits
+    if text != original:
+        backup_file(CLI_JS, backup_root); CLI_JS.write_text(text,encoding="utf-8"); actions.append(f"{label}; ensured /rename patch for version {get_cli_version()}")
+    elif hits == total_hits:
+        actions.append(f"Claude Code cli.js already in desired context mode and /rename patch for version {get_cli_version()}")
+    else:
+        actions.append(f"WARN Claude Code cli.js patch incomplete for version {get_cli_version()}")
     return actions
 
 def write_env_files() -> None:

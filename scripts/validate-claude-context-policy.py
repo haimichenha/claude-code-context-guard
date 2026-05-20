@@ -30,6 +30,9 @@ def main():
     else:
         passed &= ok('cli [1m] returns safe 1m', 'if(DP(q))return 1e6' in s)
     passed &= ok('pct override supported', 'CLAUDE_AUTOCOMPACT_PCT_OVERRIDE' in s)
+    passed &= ok('/rename usage hint', 'Usage: /rename <name>' in s and 'Usage: /rename [name]' not in s)
+    passed &= ok('/rename strips optional brackets', 'else z=_.trim().replace(/^\\[(.*)\\]$/,"$1").trim();' in s)
+    passed &= ok('/rename argumentHint', 'argumentHint:"<name>"' in s and 'argumentHint:"[name]"' not in s)
     # Threshold model from located minified code:
     reserved_summary=min(20_000, 20_000)
     effective=target_window-reserved_summary

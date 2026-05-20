@@ -9,7 +9,8 @@ It provides:
 - automatic fallback to safe 1M when context-length errors are detected;
 - medium-detail compact handoff policy;
 - model-driven captured-output workflow through `ccrun`;
-- long-term semantic memory structure for `/dev-docs-update` without changing its responsibility.
+- long-term semantic memory structure for `/dev-docs-update` without changing its responsibility;
+- persistent `/rename` UX patch so `/rename <name>` is shown and `/rename [name]` input strips the outer brackets.
 
 ## Architecture
 
@@ -29,7 +30,7 @@ Do not commit:
 - logs, checkpoints, backups, `.claude-output/`;
 - API keys, bearer tokens, cookies, sessions, OAuth data.
 
-This repository stores scripts and templates that recreate the behavior.
+This repository stores scripts and templates that recreate the behavior. The startup guard patches the installed Claude Code bundle at launch time; updating Claude Code may overwrite local patches, and the guard should re-apply them on the next `claude`/`claude-c` start.
 
 ## Install
 
@@ -67,6 +68,7 @@ Expected experimental mode output includes:
 ```text
 [OK] settings autoCompactWindow: 1400000
 [OK] cli [1m] returns 1.4m
+[OK] /rename strips optional brackets
 [CALC] compact_threshold≈993,600 tokens
 [RESULT] PASS
 ```
