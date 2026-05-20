@@ -1,0 +1,11 @@
+{
+  "target_model": "opus[1m]",
+  "claude_code_version": "2.1.112",
+  "experimental_disabled": false,
+  "last_actions": [
+    "example only; do not commit local state"
+  ],
+  "virtual_context_window": 1400000,
+  "auto_compact_pct_override": "72",
+  "updated_at": "2026-05-20T00:00:00"
+}
