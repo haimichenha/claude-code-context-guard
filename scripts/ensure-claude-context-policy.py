@@ -182,6 +182,24 @@ def patch_cli(backup_root: Path) -> list[str]:
         elif new in text: hits+=1
         else: actions.append('WARN missing context patch anchor: '+old[:80])
 
+    # Treat known non-Anthropic routed model names as 1m-capable locally without
+    # changing the actual API model string. Do not set gpt-5.5[1m] as the API
+    # model unless the proxy explicitly strips that suffix.
+    alias_window='1e6' if state_disabled() else '14e5'
+    alias_target=f'if(DP(q)||o5(q).includes("gpt-5.5"))return {alias_window};if(K?.includes(Zo)&&vo(q))return {alias_window};if(XV8(q))return {alias_window};return DR1'
+    alias_variants=[
+      'if(DP(q))return 1e6;if(K?.includes(Zo)&&vo(q))return 1e6;if(XV8(q))return 1e6;return DR1',
+      'if(DP(q))return 14e5;if(K?.includes(Zo)&&vo(q))return 14e5;if(XV8(q))return 14e5;return DR1',
+      'if(DP(q)||o5(q).includes("gpt-5.5"))return 1e6;if(K?.includes(Zo)&&vo(q))return 1e6;if(XV8(q))return 1e6;return DR1',
+      'if(DP(q)||o5(q).includes("gpt-5.5"))return 14e5;if(K?.includes(Zo)&&vo(q))return 14e5;if(XV8(q))return 14e5;return DR1',
+    ]
+    alias_hit=0
+    for variant in alias_variants:
+        if variant != alias_target and variant in text:
+            text=text.replace(variant,alias_target,1); break
+    if alias_target in text: alias_hit=1
+    else: actions.append('WARN missing gpt-5.5 1m alias anchor')
+
     # Always keep the /rename UX patch, independent of experimental 1.4m mode:
     # - display /rename <name> instead of /rename [name]
     # - accept both /rename title and /rename [title]
@@ -216,8 +234,8 @@ def patch_cli(backup_root: Path) -> list[str]:
     if default_new in text: default_hit=1
     else: actions.append('WARN missing default context window anchor')
 
-    total_hits=len(replacements)+3+1
-    hits += rename_hits + default_hit
+    total_hits=len(replacements)+3+1+1
+    hits += rename_hits + default_hit + alias_hit
     if text != original:
         backup_file(CLI_JS, backup_root); CLI_JS.write_text(text,encoding="utf-8"); actions.append(f"{label}; ensured /rename patch for version {get_cli_version()}")
     elif hits == total_hits:

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.3
+
+- Treat routed `gpt-5.5` sessions as 1M-capable in local Claude Code context accounting without changing the API model string.
+
 ## 0.1.2
 
 - Raise ordinary non-`[1m]` fallback context window from 200K to 300K, making 72% auto-compact trigger around 201.6K.

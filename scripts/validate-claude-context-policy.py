@@ -24,7 +24,7 @@ def main():
     passed &= ok('settings autoCompactWindow', settings.get('autoCompactWindow')==target_window, str(settings.get('autoCompactWindow')))
     if not disabled:
         passed &= ok('pct override 72', settings.get('env',{}).get('CLAUDE_AUTOCOMPACT_PCT_OVERRIDE')=='72', str(settings.get('env',{}).get('CLAUDE_AUTOCOMPACT_PCT_OVERRIDE')))
-        passed &= ok('cli [1m] returns 1.4m', 'if(DP(q))return 14e5' in s)
+        passed &= ok('cli [1m]/gpt-5.5 alias returns 1.4m', 'if(DP(q)||o5(q).includes("gpt-5.5"))return 14e5' in s)
         passed &= ok('cli schema max 1.4m', 'autoCompactWindow:y.number().int().min(1e5).max(14e5).optional()' in s)
         passed &= ok('cli env max 1.4m', '$LK=14e5' in s)
     else:
