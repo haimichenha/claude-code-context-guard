@@ -1,5 +1,6 @@
 param(
-  [switch]$NoCliPatch
+  [switch]$NoCliPatch,
+  [switch]$AsAwareCompact
 )
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -12,7 +13,11 @@ Copy-Item -Force (Join-Path $repo 'scripts\check-claude-context-errors.py') (Joi
 Copy-Item -Force (Join-Path $repo 'scripts\validate-claude-context-policy.py') (Join-Path $scripts 'validate-claude-context-policy.py')
 Copy-Item -Force (Join-Path $repo 'scripts\ccrun.ps1') (Join-Path $scripts 'ccrun.ps1')
 Copy-Item -Force (Join-Path $repo 'persistent-handoff\global-context-policy.md') (Join-Path $handoff 'global-context-policy.md')
-Copy-Item -Force (Join-Path $repo 'persistent-handoff\compact-template.md') (Join-Path $handoff 'compact-template.md')
+$compactTemplate = if ($AsAwareCompact) { Join-Path $repo 'persistent-handoff\compact-template.as.md' } else { Join-Path $repo 'persistent-handoff\compact-template.md' }
+Copy-Item -Force $compactTemplate (Join-Path $handoff 'compact-template.md')
+if (Test-Path (Join-Path $repo 'persistent-handoff\compact-template.as.md')) {
+  Copy-Item -Force (Join-Path $repo 'persistent-handoff\compact-template.as.md') (Join-Path $handoff 'compact-template.as.md')
+}
 Copy-Item -Force (Join-Path $repo 'persistent-handoff\verified-facts.md') (Join-Path $handoff 'verified-facts.md')
 if (!(Test-Path (Join-Path $handoff 'current-task-handoff.md'))) {
   Copy-Item -Force (Join-Path $repo 'persistent-handoff\current-task-handoff.example.md') (Join-Path $handoff 'current-task-handoff.md')

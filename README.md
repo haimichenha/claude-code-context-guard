@@ -59,6 +59,17 @@ ccrun "npm test"
 
 The human should not need to remember `ccrun`; it is a model-side captured-output strategy.
 
+
+## AS-aware compact profile
+
+If this machine also uses `all-search-stack` `/AS`, install the AS-aware compact template so compaction preserves requirement IDs, repository freshness, governance reminders, known-good state, failed paths, staging candidates, missing measurements, and the next smallest action.
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -AsAwareCompact
+```
+
+This copies `persistent-handoff/compact-template.as.md` to `%USERPROFILE%\.claude\persistent-handoff\compact-template.md` and keeps a copy as `compact-template.as.md`.
+
 ## Verify
 
 ```powershell

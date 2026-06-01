@@ -1,3 +1,9 @@
+
+## 2026-06-01
+
+- Added optional AS-aware compact template for `all-search-stack` workflows.
+- Added `install.ps1 -AsAwareCompact` to install the AS-aware template as the active Claude compact handoff.
+
 # Changelog
 
 ## 0.1.3
