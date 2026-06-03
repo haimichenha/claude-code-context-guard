@@ -1,4 +1,10 @@
 
+## 2026-06-03
+
+- Added live transcript monitor patch scripts.
+- Added `install.ps1 -NoLiveMonitorPatch` to opt out of the live `Ctrl+O` transcript patch.
+- Documented manual live monitor install/validation and backup behavior.
+
 ## 2026-06-01
 
 - Added optional AS-aware compact template for `all-search-stack` workflows.

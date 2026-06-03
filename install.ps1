@@ -1,5 +1,6 @@
 param(
   [switch]$NoCliPatch,
+  [switch]$NoLiveMonitorPatch,
   [switch]$AsAwareCompact
 )
 $ErrorActionPreference = 'Stop'
@@ -11,6 +12,8 @@ New-Item -ItemType Directory -Force -Path $scripts,$handoff | Out-Null
 Copy-Item -Force (Join-Path $repo 'scripts\ensure-claude-context-policy.py') (Join-Path $scripts 'ensure-claude-context-policy.py')
 Copy-Item -Force (Join-Path $repo 'scripts\check-claude-context-errors.py') (Join-Path $scripts 'check-claude-context-errors.py')
 Copy-Item -Force (Join-Path $repo 'scripts\validate-claude-context-policy.py') (Join-Path $scripts 'validate-claude-context-policy.py')
+Copy-Item -Force (Join-Path $repo 'scripts\ensure-claude-live-monitor.py') (Join-Path $scripts 'ensure-claude-live-monitor.py')
+Copy-Item -Force (Join-Path $repo 'scripts\validate-claude-live-monitor.py') (Join-Path $scripts 'validate-claude-live-monitor.py')
 Copy-Item -Force (Join-Path $repo 'scripts\ccrun.ps1') (Join-Path $scripts 'ccrun.ps1')
 Copy-Item -Force (Join-Path $repo 'persistent-handoff\global-context-policy.md') (Join-Path $handoff 'global-context-policy.md')
 $compactTemplate = if ($AsAwareCompact) { Join-Path $repo 'persistent-handoff\compact-template.as.md' } else { Join-Path $repo 'persistent-handoff\compact-template.md' }
@@ -51,4 +54,7 @@ Set-Content -Encoding UTF8 -Path $profile -Value $existing
 $ensureArgs = @()
 if ($NoCliPatch) { $ensureArgs += '--no-cli-patch' }
 python (Join-Path $scripts 'ensure-claude-context-policy.py') @ensureArgs
+if (-not $NoLiveMonitorPatch) {
+  python (Join-Path $scripts 'ensure-claude-live-monitor.py')
+}
 Write-Host 'Install complete. Open a new PowerShell window, then run: claude or claude-c'

@@ -2,6 +2,8 @@
 function Invoke-ClaudeContextPolicyEnsure {
     $script = Join-Path $env:USERPROFILE '.claude\scripts\ensure-claude-context-policy.py'
     if (Test-Path $script) { python $script --quiet }
+    $liveScript = Join-Path $env:USERPROFILE '.claude\scripts\ensure-claude-live-monitor.py'
+    if (Test-Path $liveScript) { python $liveScript --quiet }
     $envScript = Join-Path $env:USERPROFILE '.claude\scripts\context-policy-env.ps1'
     if (Test-Path $envScript) { . $envScript }
 }

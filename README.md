@@ -12,7 +12,8 @@ It provides:
 - medium-detail compact handoff policy;
 - model-driven captured-output workflow through `ccrun`;
 - long-term semantic memory structure for `/dev-docs-update` without changing its responsibility;
-- persistent `/rename` UX patch so `/rename <name>` is shown and `/rename [name]` input strips the outer brackets.
+- persistent `/rename` UX patch so `/rename <name>` is shown and `/rename [name]` input strips the outer brackets;
+- optional live transcript monitor patch so `Ctrl+O` transcript uses live message/tool streams instead of a frozen entry snapshot.
 
 ## Architecture
 
@@ -70,10 +71,42 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -AsAwareCompac
 
 This copies `persistent-handoff/compact-template.as.md` to `%USERPROFILE%\.claude\persistent-handoff\compact-template.md` and keeps a copy as `compact-template.as.md`.
 
+## Live transcript monitor
+
+Claude Code's fullscreen transcript can freeze the message/tool list at the moment `Ctrl+O` is opened. The live monitor patch changes the installed JS bundle so the transcript reads the current message and streaming-tool arrays while it remains open. It also keeps `transcript:toggleShowAll` active during virtual scrolling.
+
+Install applies this patch by default when the installed Claude Code package still contains a JavaScript `cli.js` bundle:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1
+```
+
+Skip only the live-monitor patch:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\install.ps1 -NoLiveMonitorPatch
+```
+
+Apply or validate it manually:
+
+```powershell
+python $env:USERPROFILE\.claude\scripts\ensure-claude-live-monitor.py
+python $env:USERPROFILE\.claude\scripts\validate-claude-live-monitor.py
+```
+
+The script backs up the installed bundle before patching, for example:
+
+```text
+cli.js.bak-live-monitor-YYYYMMDD-HHMMSS
+```
+
+If Anthropic changes the minified bundle shape or ships only a native binary, validation will fail instead of guessing.
+
 ## Verify
 
 ```powershell
 python $env:USERPROFILE\.claude\scripts\validate-claude-context-policy.py
+python $env:USERPROFILE\.claude\scripts\validate-claude-live-monitor.py
 ```
 
 Expected experimental mode output includes:
