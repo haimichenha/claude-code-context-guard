@@ -17,9 +17,9 @@ NPM_ROOT = Path(os.environ.get("APPDATA", str(HOME / "AppData" / "Roaming"))) / 
 CLAUDE_CODE_DIR = NPM_ROOT / "node_modules" / "@anthropic-ai" / "claude-code"
 CLI_JS = CLAUDE_CODE_DIR / "cli.js"
 PKG_JSON = CLAUDE_CODE_DIR / "package.json"
-TARGET_MODEL = "opus[1m]"
+TARGET_MODEL = "gpt-5.5"
 EXPERIMENTAL_WINDOW = 1_400_000
-SAFE_WINDOW = 1_000_000
+SAFE_WINDOW = 800_000
 DEFAULT_WINDOW = 300_000
 EXPERIMENTAL_PCT = "72"
 POLICY_START = "<!-- CLAUDE_CONTEXT_POLICY_START -->"
@@ -247,8 +247,8 @@ def patch_cli(backup_root: Path) -> list[str]:
 def write_env_files() -> None:
     ENV_CMD.parent.mkdir(parents=True, exist_ok=True)
     if state_disabled():
-        ENV_CMD.write_text("@echo off\r\nset CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000\r\nset CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=\r\n", encoding='ascii')
-        ENV_PS1.write_text("$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW='1000000'\nRemove-Item Env:CLAUDE_AUTOCOMPACT_PCT_OVERRIDE -ErrorAction SilentlyContinue\n", encoding='utf-8')
+        ENV_CMD.write_text(f"@echo off\r\nset CLAUDE_CODE_AUTO_COMPACT_WINDOW={target_window()}\r\nset CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=\r\n", encoding='ascii')
+        ENV_PS1.write_text(f"$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW='{target_window()}'\nRemove-Item Env:CLAUDE_AUTOCOMPACT_PCT_OVERRIDE -ErrorAction SilentlyContinue\n", encoding='utf-8')
     else:
         ENV_CMD.write_text("@echo off\r\nset CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=72\r\nset CLAUDE_CODE_AUTO_COMPACT_WINDOW=1400000\r\n", encoding='ascii')
         ENV_PS1.write_text("$env:CLAUDE_AUTOCOMPACT_PCT_OVERRIDE='72'\n$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW='1400000'\n", encoding='utf-8')
@@ -274,5 +274,10 @@ def main() -> int:
         print(f"- mode: {'safe-1m' if state_disabled() else 'virtual-1.4m'} window={target_window()} pct={target_pct()}")
     return 0
 if __name__ == '__main__': raise SystemExit(main())
+
+
+
+
+
 
 

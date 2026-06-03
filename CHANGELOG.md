@@ -19,3 +19,9 @@
 - Startup ensure for `opus[1m]`, auto permissions, cc-switch repair, virtual 1.4M, and fallback.
 - `ccrun` captured-output wrapper.
 - Three-layer memory policy templates.
+## 2026-06-03
+
+- Add a no-destructive Claude stability repair script that preserves the 800k context window and refreshes env files.
+- Default shell wrapper startup to --no-cli-patch to avoid repeated bundle patching during normal launches.
+
+

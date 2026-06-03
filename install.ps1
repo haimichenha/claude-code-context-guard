@@ -11,6 +11,7 @@ Copy-Item -Force (Join-Path $repo 'scripts\ensure-claude-context-policy.py') (Jo
 Copy-Item -Force (Join-Path $repo 'scripts\check-claude-context-errors.py') (Join-Path $scripts 'check-claude-context-errors.py')
 Copy-Item -Force (Join-Path $repo 'scripts\validate-claude-context-policy.py') (Join-Path $scripts 'validate-claude-context-policy.py')
 Copy-Item -Force (Join-Path $repo 'scripts\ccrun.ps1') (Join-Path $scripts 'ccrun.ps1')
+Copy-Item -Force (Join-Path $repo 'scripts\claude-stability-repair.ps1') (Join-Path $scripts 'claude-stability-repair.ps1')
 Copy-Item -Force (Join-Path $repo 'persistent-handoff\global-context-policy.md') (Join-Path $handoff 'global-context-policy.md')
 Copy-Item -Force (Join-Path $repo 'persistent-handoff\compact-template.md') (Join-Path $handoff 'compact-template.md')
 Copy-Item -Force (Join-Path $repo 'persistent-handoff\verified-facts.md') (Join-Path $handoff 'verified-facts.md')
@@ -47,3 +48,4 @@ $ensureArgs = @()
 if ($NoCliPatch) { $ensureArgs += '--no-cli-patch' }
 python (Join-Path $scripts 'ensure-claude-context-policy.py') @ensureArgs
 Write-Host 'Install complete. Open a new PowerShell window, then run: claude or claude-c'
+
