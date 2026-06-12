@@ -10,7 +10,7 @@ LOCAL_SCRIPT = Path(__file__).with_name("ensure-claude-live-monitor.py")
 
 
 def main() -> int:
-    script = SCRIPT if SCRIPT.exists() else LOCAL_SCRIPT
+    script = LOCAL_SCRIPT if LOCAL_SCRIPT.exists() else SCRIPT
     return subprocess.call([sys.executable, str(script), "--validate"])
 
 

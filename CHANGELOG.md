@@ -1,4 +1,11 @@
 
+## 2026-06-12
+
+- Added native-binary compatibility detection for Claude Code installs that ship `bin/claude.exe` without root `cli.js`.
+- Changed validators to skip bundle-only checks on native-binary installs instead of crashing on a missing `cli.js`.
+- Documented which guard features still work in native-binary mode and which require a JavaScript `cli.js` bundle.
+- Changed the active managed context window target to 1.2M while keeping context-error fallback at safe 1M.
+
 ## 2026-06-03
 
 - Added live transcript monitor patch scripts.

@@ -4,6 +4,6 @@ if (Test-Path $script) { python $script --quiet }
 $liveScript = Join-Path $env:USERPROFILE '.claude\scripts\ensure-claude-live-monitor.py'
 if (Test-Path $liveScript) { python $liveScript --quiet }
 $env:CLAUDE_AUTOCOMPACT_PCT_OVERRIDE = '72'
-$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW = '1400000'
+$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW = '1200000'
 & (Join-Path $env:APPDATA 'npm\claude.cmd') --permission-mode auto -c @args
 exit $LASTEXITCODE

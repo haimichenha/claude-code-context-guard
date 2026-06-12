@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import shutil
 from datetime import datetime
@@ -11,6 +12,8 @@ HOME = Path.home()
 NPM_ROOT = Path(os.environ.get("APPDATA", str(HOME / "AppData" / "Roaming"))) / "npm"
 CLAUDE_CODE_DIR = NPM_ROOT / "node_modules" / "@anthropic-ai" / "claude-code"
 CLI_JS = CLAUDE_CODE_DIR / "cli.js"
+CLAUDE_EXE = CLAUDE_CODE_DIR / "bin" / "claude.exe"
+PKG_JSON = CLAUDE_CODE_DIR / "package.json"
 
 PATCH_MARKER = "CLAUDE_LIVE_MONITOR_PATCHED"
 
@@ -36,6 +39,13 @@ def backup(path: Path) -> Path:
     bak = path.with_name(f"{path.name}.bak-live-monitor-{stamp()}")
     shutil.copy2(path, bak)
     return bak
+
+
+def get_cli_version() -> str:
+    try:
+        return json.loads(PKG_JSON.read_text(encoding="utf-8")).get("version", "unknown")
+    except Exception:
+        return "unknown"
 
 
 def patch_text(text: str) -> tuple[str, list[str]]:
@@ -80,7 +90,13 @@ def main() -> int:
     args = ap.parse_args()
 
     if not CLI_JS.exists():
-        print(f"[live-monitor] missing Claude Code cli.js: {CLI_JS}")
+        if CLAUDE_EXE.exists():
+            if not args.quiet:
+                print("[SKIP] Claude Code is installed as a native binary; live monitor cli.js patch is unavailable")
+                print(f"[INFO] version={get_cli_version()} path={CLAUDE_EXE}")
+            return 0
+        if not args.quiet:
+            print(f"[live-monitor] missing Claude Code cli.js: {CLI_JS}")
         return 2
 
     text = CLI_JS.read_text(encoding="utf-8", errors="replace")
