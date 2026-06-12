@@ -71,7 +71,8 @@ def main() -> int:
     target_window = 1_000_000 if disabled else 1_200_000
     pct = None if disabled else 72.0
 
-    passed &= ok("model opus[1m]", settings.get("model") == "opus[1m]", str(settings.get("model")))
+    expected_model = str(state.get("target_model") or "opus")
+    passed &= ok(f"model {expected_model}", settings.get("model") == expected_model, str(settings.get("model")))
     passed &= ok(
         "permission auto",
         settings.get("permissions", {}).get("defaultMode") == "auto",

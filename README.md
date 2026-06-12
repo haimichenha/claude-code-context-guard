@@ -4,7 +4,7 @@ A small Windows-oriented guard for improving Claude Code context behavior withou
 
 It provides:
 
-- startup-time repair for `opus[1m]`, `permissions.defaultMode=auto`, and cc-switch provider settings;
+- startup-time repair for `opus`, `permissions.defaultMode=auto`, and cc-switch provider settings;
 - optional managed 1.2M client-side context window with `CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=72` when the installed Claude Code package still exposes a JavaScript `cli.js` bundle;
 - ordinary-provider fallback window patch from 200k to 300k on JavaScript `cli.js` builds, so 72% auto-compact triggers around 201.6k instead of ~130k;
 - local 1M alias for routed `gpt-5.5` sessions on JavaScript `cli.js` builds without changing the actual API model name to `gpt-5.5[1m]`;
