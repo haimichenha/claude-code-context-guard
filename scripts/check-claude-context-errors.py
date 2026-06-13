@@ -52,7 +52,7 @@ def main():
     if hit:
         state=load(); state['experimental_disabled']=True; state['disabled_reason']='auto-detected '+hit[1]; state['disabled_at']=datetime.now().isoformat(timespec='seconds'); state['disabled_source']=str(hit[0]); dump(state)
         subprocess.run([sys.executable, str(ENSURE), '--quiet'], check=False)
-        print('[context-policy] disabled virtual 1.4m after detecting:', hit[1], 'in', hit[0])
+        print('[context-policy] disabled managed context window after detecting:', hit[1], 'in', hit[0])
         return 2
     return 0
 if __name__=='__main__': raise SystemExit(main())

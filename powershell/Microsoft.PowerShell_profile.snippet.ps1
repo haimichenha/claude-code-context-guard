@@ -12,28 +12,14 @@ function Invoke-ClaudeContextPolicyPostCheck {
     if (Test-Path $script) { python $script | Out-Null }
 }
 function claude {
-    Invoke-ClaudeContextPolicyEnsure
-    $claudeCmd = Join-Path $env:APPDATA 'npm\claude.cmd'
-    $claudeArgs = @($args)
-    if ($claudeArgs.Count -gt 0 -and $claudeArgs[0] -eq 'code') {
-        if ($claudeArgs.Count -gt 1) { $claudeArgs = $claudeArgs[1..($claudeArgs.Count - 1)] } else { $claudeArgs = @() }
-    }
-    $hasPermissionMode = $claudeArgs -contains '--permission-mode'
-    $hasDangerousSkip = $claudeArgs -contains '--dangerously-skip-permissions'
-    $hasAllowDangerous = $claudeArgs -contains '--allow-dangerously-skip-permissions'
-    if ($hasPermissionMode -or $hasDangerousSkip -or $hasAllowDangerous) { & $claudeCmd @claudeArgs } else { & $claudeCmd --permission-mode auto @claudeArgs }
-    $code = $LASTEXITCODE
-    Invoke-ClaudeContextPolicyPostCheck
-    exit $code
+    $dispatch = Join-Path $env:USERPROFILE '.claude\scripts\claude-dispatch.ps1'
+    & $dispatch @args
+    exit $LASTEXITCODE
 }
 function claude-c {
-    Invoke-ClaudeContextPolicyEnsure
-    $claudeCmd = Join-Path $env:APPDATA 'npm\claude.cmd'
-    $claudeArgs = @('-c') + @($args)
-    if ($claudeArgs -contains '--permission-mode') { & $claudeCmd @claudeArgs } else { & $claudeCmd --permission-mode auto @claudeArgs }
-    $code = $LASTEXITCODE
-    Invoke-ClaudeContextPolicyPostCheck
-    exit $code
+    $dispatch = Join-Path $env:USERPROFILE '.claude\scripts\claude-dispatch.ps1'
+    & $dispatch -c @args
+    exit $LASTEXITCODE
 }
 # CLAUDE_CONTEXT_POLICY_WRAPPER_END
 

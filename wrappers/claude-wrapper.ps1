@@ -1,4 +1,3 @@
-#!/usr/bin/env pwsh
 $dispatch = Join-Path $env:USERPROFILE '.claude\scripts\claude-dispatch.ps1'
-& $dispatch -c @args
+& $dispatch @args
 exit $LASTEXITCODE

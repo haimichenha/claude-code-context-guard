@@ -9,7 +9,7 @@ $SettingsJson = Join-Path $HomeDir '.claude\settings.json'
 $StateJson = Join-Path $HomeDir '.claude\context-policy-state.json'
 $EnvPs1 = Join-Path $HomeDir '.claude\scripts\context-policy-env.ps1'
 $EnvCmd = Join-Path $HomeDir '.claude\scripts\context-policy-env.cmd'
-$Window = 800000
+$Window = 1200000
 $changed = @()
 
 function Read-Json($path) {
@@ -24,7 +24,7 @@ function Test-ProcessAlive($processId) {
   return [bool](Get-CimInstance Win32_Process -Filter "ProcessId=$processId")
 }
 
-# 保持 800000 上下文，不降低体验。
+# 保持 1200000 上下文，与 Claude managed-1.2m 策略一致。
 $settings = Read-Json $SettingsJson
 if ($settings) {
   if ($settings.autoCompactWindow -ne $Window) {
@@ -41,8 +41,8 @@ if ($state) {
     $changed += "state.virtual_context_window=$Window"
   }
 }
-"`$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW='$Window'`nRemove-Item Env:CLAUDE_AUTOCOMPACT_PCT_OVERRIDE -ErrorAction SilentlyContinue`n" | Set-Content -LiteralPath $EnvPs1 -Encoding UTF8
-"@echo off`r`nset CLAUDE_CODE_AUTO_COMPACT_WINDOW=$Window`r`nset CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=`r`n" | Set-Content -LiteralPath $EnvCmd -Encoding ASCII
+"`$env:CLAUDE_AUTOCOMPACT_PCT_OVERRIDE='72'`n`$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW='$Window'`n" | Set-Content -LiteralPath $EnvPs1 -Encoding UTF8
+"@echo off`r`nset CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=72`r`nset CLAUDE_CODE_AUTO_COMPACT_WINDOW=$Window`r`n" | Set-Content -LiteralPath $EnvCmd -Encoding ASCII
 
 if ($KillOrphans) {
   # 1) 清理已经禁用的重型 MCP。

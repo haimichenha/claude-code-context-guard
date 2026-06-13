@@ -11,6 +11,7 @@ Copy-Item -Force (Join-Path $repo 'scripts\ensure-claude-context-policy.py') (Jo
 Copy-Item -Force (Join-Path $repo 'scripts\check-claude-context-errors.py') (Join-Path $scripts 'check-claude-context-errors.py')
 Copy-Item -Force (Join-Path $repo 'scripts\validate-claude-context-policy.py') (Join-Path $scripts 'validate-claude-context-policy.py')
 Copy-Item -Force (Join-Path $repo 'scripts\ccrun.ps1') (Join-Path $scripts 'ccrun.ps1')
+Copy-Item -Force (Join-Path $repo 'scripts\claude-dispatch.ps1') (Join-Path $scripts 'claude-dispatch.ps1')
 Copy-Item -Force (Join-Path $repo 'scripts\claude-stability-repair.ps1') (Join-Path $scripts 'claude-stability-repair.ps1')
 Copy-Item -Force (Join-Path $repo 'persistent-handoff\global-context-policy.md') (Join-Path $handoff 'global-context-policy.md')
 Copy-Item -Force (Join-Path $repo 'persistent-handoff\compact-template.md') (Join-Path $handoff 'compact-template.md')
@@ -26,6 +27,8 @@ Copy-Item -Force (Join-Path $repo 'wrappers\ccrun.cmd') (Join-Path $npm 'ccrun.c
 Copy-Item -Force (Join-Path $repo 'wrappers\ccrun.ps1') (Join-Path $npm 'ccrun.ps1')
 $bin = Join-Path $env:USERPROFILE 'bin'
 New-Item -ItemType Directory -Force -Path $bin | Out-Null
+Copy-Item -Force (Join-Path $repo 'wrappers\claude.cmd') (Join-Path $bin 'claude.cmd')
+Copy-Item -Force (Join-Path $repo 'wrappers\claude-wrapper.ps1') (Join-Path $bin 'claude-wrapper.ps1')
 Copy-Item -Force (Join-Path $repo 'wrappers\ccrun.cmd') (Join-Path $bin 'ccrun.cmd')
 Copy-Item -Force (Join-Path $repo 'wrappers\ccrun.ps1') (Join-Path $bin 'ccrun.ps1')
 $profile = $PROFILE.CurrentUserCurrentHost

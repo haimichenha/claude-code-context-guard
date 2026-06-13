@@ -16,10 +16,11 @@ ENV_PS1 = CLAUDE_DIR / "scripts" / "context-policy-env.ps1"
 NPM_ROOT = Path(os.environ.get("APPDATA", str(HOME / "AppData" / "Roaming"))) / "npm"
 CLAUDE_CODE_DIR = NPM_ROOT / "node_modules" / "@anthropic-ai" / "claude-code"
 CLI_JS = CLAUDE_CODE_DIR / "cli.js"
+CLAUDE_EXE = CLAUDE_CODE_DIR / "bin" / "claude.exe"
 PKG_JSON = CLAUDE_CODE_DIR / "package.json"
-TARGET_MODEL = "gpt-5.5"
-EXPERIMENTAL_WINDOW = 1_400_000
-SAFE_WINDOW = 800_000
+TARGET_MODEL = "opus"
+EXPERIMENTAL_WINDOW = 1_200_000
+SAFE_WINDOW = 1_000_000
 DEFAULT_WINDOW = 300_000
 EXPERIMENTAL_PCT = "72"
 POLICY_START = "<!-- CLAUDE_CONTEXT_POLICY_START -->"
@@ -46,6 +47,12 @@ def target_pct() -> str | None: return None if state_disabled() else EXPERIMENTA
 def get_cli_version() -> str:
     try: return json.loads(PKG_JSON.read_text(encoding="utf-8")).get("version","unknown")
     except Exception: return "unknown"
+
+def claude_install_mode() -> str:
+    if CLI_JS.exists(): return "javascript-cli"
+    if CLAUDE_EXE.exists(): return "native-binary"
+    if CLAUDE_CODE_DIR.exists(): return "unknown-package"
+    return "missing"
 
 def merge_context_settings(cfg: dict) -> bool:
     changed=False
@@ -162,36 +169,48 @@ def ensure_policy_files(backup_root: Path) -> list[str]:
 
 def patch_cli(backup_root: Path) -> list[str]:
     actions=[]
-    if not CLI_JS.exists(): return actions
+    if not CLI_JS.exists():
+        if CLAUDE_EXE.exists():
+            actions.append(f"SKIP Claude Code cli.js patches: native binary install detected for version {get_cli_version()}")
+        else:
+            actions.append(f"WARN missing Claude Code cli.js: {CLI_JS}")
+        return actions
     text=CLI_JS.read_text(encoding="utf-8", errors="replace"); original=text
     if state_disabled():
-        replacements=[
-          ('autoCompactWindow:y.number().int().min(1e5).max(14e5).optional()','autoCompactWindow:y.number().int().min(1e5).max(1e6).optional()'),
-          ('if(DP(q))return 14e5;if(K?.includes(Zo)&&vo(q))return 14e5;if(XV8(q))return 14e5;return DR1','if(DP(q))return 1e6;if(K?.includes(Zo)&&vo(q))return 1e6;if(XV8(q))return 1e6;return DR1'),
-          ('var uDY=20000,o_7=1e5,$LK=14e5,t_7=13000','var uDY=20000,o_7=1e5,$LK=1e6,t_7=13000'),
-        ]; label='restored Claude Code cli.js safe 1m'
+        patch_groups=[
+          (['autoCompactWindow:y.number().int().min(1e5).max(14e5).optional()','autoCompactWindow:y.number().int().min(1e5).max(12e5).optional()'], 'autoCompactWindow:y.number().int().min(1e5).max(1e6).optional()', 'context schema max'),
+          (['if(DP(q))return 14e5;if(K?.includes(Zo)&&vo(q))return 14e5;if(XV8(q))return 14e5;return DR1','if(DP(q))return 12e5;if(K?.includes(Zo)&&vo(q))return 12e5;if(XV8(q))return 12e5;return DR1'], 'if(DP(q))return 1e6;if(K?.includes(Zo)&&vo(q))return 1e6;if(XV8(q))return 1e6;return DR1', '1m model window'),
+          (['var uDY=20000,o_7=1e5,$LK=14e5,t_7=13000','var uDY=20000,o_7=1e5,$LK=12e5,t_7=13000'], 'var uDY=20000,o_7=1e5,$LK=1e6,t_7=13000', 'env max window'),
+        ]; label='restored Claude Code cli.js safe 1m internals'
     else:
-        replacements=[
-          ('autoCompactWindow:y.number().int().min(1e5).max(1e6).optional()','autoCompactWindow:y.number().int().min(1e5).max(14e5).optional()'),
-          ('if(DP(q))return 1e6;if(K?.includes(Zo)&&vo(q))return 1e6;if(XV8(q))return 1e6;return DR1','if(DP(q))return 14e5;if(K?.includes(Zo)&&vo(q))return 14e5;if(XV8(q))return 14e5;return DR1'),
-          ('var uDY=20000,o_7=1e5,$LK=1e6,t_7=13000','var uDY=20000,o_7=1e5,$LK=14e5,t_7=13000'),
-        ]; label='patched Claude Code cli.js virtual 1.4m'
+        patch_groups=[
+          (['autoCompactWindow:y.number().int().min(1e5).max(1e6).optional()','autoCompactWindow:y.number().int().min(1e5).max(14e5).optional()'], 'autoCompactWindow:y.number().int().min(1e5).max(12e5).optional()', 'context schema max'),
+          (['if(DP(q))return 1e6;if(K?.includes(Zo)&&vo(q))return 1e6;if(XV8(q))return 1e6;return DR1','if(DP(q))return 14e5;if(K?.includes(Zo)&&vo(q))return 14e5;if(XV8(q))return 14e5;return DR1'], 'if(DP(q))return 12e5;if(K?.includes(Zo)&&vo(q))return 12e5;if(XV8(q))return 12e5;return DR1', '1m model window'),
+          (['var uDY=20000,o_7=1e5,$LK=1e6,t_7=13000','var uDY=20000,o_7=1e5,$LK=14e5,t_7=13000'], 'var uDY=20000,o_7=1e5,$LK=12e5,t_7=13000', 'env max window'),
+        ]; label='patched Claude Code cli.js managed 1.2m'
     hits=0
-    for old,new in replacements:
-        if old in text: text=text.replace(old,new,1); hits+=1
-        elif new in text: hits+=1
-        else: actions.append('WARN missing context patch anchor: '+old[:80])
+    for variants,target,desc in patch_groups:
+        if target in text:
+            hits+=1
+            continue
+        replaced=False
+        for variant in variants:
+            if variant in text:
+                text=text.replace(variant,target,1); hits+=1; replaced=True; break
+        if not replaced: actions.append('WARN missing context patch anchor: '+desc)
 
     # Treat known non-Anthropic routed model names as 1m-capable locally without
     # changing the actual API model string. Do not set gpt-5.5[1m] as the API
     # model unless the proxy explicitly strips that suffix.
-    alias_window='1e6' if state_disabled() else '14e5'
+    alias_window='1e6' if state_disabled() else '12e5'
     alias_target=f'if(DP(q)||o5(q).includes("gpt-5.5"))return {alias_window};if(K?.includes(Zo)&&vo(q))return {alias_window};if(XV8(q))return {alias_window};return DR1'
     alias_variants=[
       'if(DP(q))return 1e6;if(K?.includes(Zo)&&vo(q))return 1e6;if(XV8(q))return 1e6;return DR1',
       'if(DP(q))return 14e5;if(K?.includes(Zo)&&vo(q))return 14e5;if(XV8(q))return 14e5;return DR1',
+      'if(DP(q))return 12e5;if(K?.includes(Zo)&&vo(q))return 12e5;if(XV8(q))return 12e5;return DR1',
       'if(DP(q)||o5(q).includes("gpt-5.5"))return 1e6;if(K?.includes(Zo)&&vo(q))return 1e6;if(XV8(q))return 1e6;return DR1',
       'if(DP(q)||o5(q).includes("gpt-5.5"))return 14e5;if(K?.includes(Zo)&&vo(q))return 14e5;if(XV8(q))return 14e5;return DR1',
+      'if(DP(q)||o5(q).includes("gpt-5.5"))return 12e5;if(K?.includes(Zo)&&vo(q))return 12e5;if(XV8(q))return 12e5;return DR1',
     ]
     alias_hit=0
     for variant in alias_variants:
@@ -200,7 +219,7 @@ def patch_cli(backup_root: Path) -> list[str]:
     if alias_target in text: alias_hit=1
     else: actions.append('WARN missing gpt-5.5 1m alias anchor')
 
-    # Always keep the /rename UX patch, independent of experimental 1.4m mode:
+    # Always keep the /rename UX patch, independent of managed context mode:
     # - display /rename <name> instead of /rename [name]
     # - accept both /rename title and /rename [title]
     # - strip only one outer [] pair from explicitly bracketed input
@@ -226,7 +245,7 @@ def patch_cli(backup_root: Path) -> list[str]:
     # Lift the non-[1m] fallback model window. Claude Code defaults DR1 to 200k;
     # with the global 72% autocompact override this compacts around 130k. Raising
     # DR1 to 300k makes ordinary-provider sessions compact around 200k while
-    # leaving [1m] sessions on the separate 1.4m path.
+    # leaving [1m] sessions on the separate managed 1.2m path.
     default_old='var DR1=200000,Po6=20000,UO_=32000,QO_=128000,pgq=8000;'
     default_new='var DR1=300000,Po6=20000,UO_=32000,QO_=128000,pgq=8000;'
     default_hit=0
@@ -234,7 +253,7 @@ def patch_cli(backup_root: Path) -> list[str]:
     if default_new in text: default_hit=1
     else: actions.append('WARN missing default context window anchor')
 
-    total_hits=len(replacements)+3+1+1
+    total_hits=len(patch_groups)+3+1+1
     hits += rename_hits + default_hit + alias_hit
     if text != original:
         backup_file(CLI_JS, backup_root); CLI_JS.write_text(text,encoding="utf-8"); actions.append(f"{label}; ensured /rename patch for version {get_cli_version()}")
@@ -247,22 +266,26 @@ def patch_cli(backup_root: Path) -> list[str]:
 def write_env_files() -> None:
     ENV_CMD.parent.mkdir(parents=True, exist_ok=True)
     if state_disabled():
-        ENV_CMD.write_text(f"@echo off\r\nset CLAUDE_CODE_AUTO_COMPACT_WINDOW={target_window()}\r\nset CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=\r\n", encoding='ascii')
-        ENV_PS1.write_text(f"$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW='{target_window()}'\nRemove-Item Env:CLAUDE_AUTOCOMPACT_PCT_OVERRIDE -ErrorAction SilentlyContinue\n", encoding='utf-8')
+        ENV_CMD.write_text("@echo off\r\nset CLAUDE_CODE_AUTO_COMPACT_WINDOW=1000000\r\nset CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=\r\n", encoding='ascii')
+        ENV_PS1.write_text("$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW='1000000'\nRemove-Item Env:CLAUDE_AUTOCOMPACT_PCT_OVERRIDE -ErrorAction SilentlyContinue\n", encoding='utf-8')
     else:
-        ENV_CMD.write_text("@echo off\r\nset CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=72\r\nset CLAUDE_CODE_AUTO_COMPACT_WINDOW=1400000\r\n", encoding='ascii')
-        ENV_PS1.write_text("$env:CLAUDE_AUTOCOMPACT_PCT_OVERRIDE='72'\n$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW='1400000'\n", encoding='utf-8')
+        ENV_CMD.write_text("@echo off\r\nset CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=72\r\nset CLAUDE_CODE_AUTO_COMPACT_WINDOW=1200000\r\n", encoding='ascii')
+        ENV_PS1.write_text("$env:CLAUDE_AUTOCOMPACT_PCT_OVERRIDE='72'\n$env:CLAUDE_CODE_AUTO_COMPACT_WINDOW='1200000'\n", encoding='utf-8')
 
 def write_state(actions: list[str]):
     state=load_json(STATE_FILE)
-    state.update({"updated_at":datetime.now().isoformat(timespec="seconds"),"target_model":TARGET_MODEL,"experimental_disabled":state_disabled(),"virtual_context_window":target_window(),"auto_compact_pct_override":target_pct(),"claude_code_version":get_cli_version(),"last_actions":actions[-20:]})
+    state.update({"updated_at":datetime.now().isoformat(timespec="seconds"),"target_model":TARGET_MODEL,"experimental_disabled":state_disabled(),"virtual_context_window":target_window(),"auto_compact_pct_override":target_pct(),"claude_code_version":get_cli_version(),"claude_code_install_mode":claude_install_mode(),"cli_patch_available":CLI_JS.exists(),"last_actions":actions[-20:]})
     dump_json(STATE_FILE,state)
 
 def main() -> int:
     ap=argparse.ArgumentParser(); ap.add_argument('--quiet',action='store_true'); ap.add_argument('--no-cli-patch',action='store_true'); ap.add_argument('--disable-experimental',action='store_true'); ap.add_argument('--enable-experimental',action='store_true'); args=ap.parse_args()
     state=load_json(STATE_FILE)
     if args.disable_experimental: state['experimental_disabled']=True; state['disabled_reason']='manual'; state['disabled_at']=datetime.now().isoformat(timespec='seconds'); dump_json(STATE_FILE,state)
-    if args.enable_experimental: state['experimental_disabled']=False; state.pop('disabled_reason',None); dump_json(STATE_FILE,state)
+    if args.enable_experimental:
+        state['experimental_disabled']=False
+        for stale_key in ('disabled_reason','disabled_at','disabled_source'):
+            state.pop(stale_key,None)
+        dump_json(STATE_FILE,state)
     backup_root=CLAUDE_DIR/'backups'/('context-policy-auto-'+now_stamp())
     actions=[]; actions+=ensure_settings(backup_root); actions+=ensure_cc_switch(backup_root); actions+=ensure_policy_files(backup_root)
     if not args.no_cli_patch: actions+=patch_cli(backup_root)
@@ -271,7 +294,8 @@ def main() -> int:
         print('[context-policy] done')
         for a in actions or ['no changes']: print('- '+a)
         if backup_root.exists(): print('- backup_dir: '+str(backup_root))
-        print(f"- mode: {'safe-1m' if state_disabled() else 'virtual-1.4m'} window={target_window()} pct={target_pct()}")
+        print(f"- install_mode: {claude_install_mode()} cli_patch_available={CLI_JS.exists()}")
+        print(f"- requested_mode: {'safe-1m' if state_disabled() else 'managed-1.2m'} window={target_window()} pct={target_pct()}")
     return 0
 if __name__ == '__main__': raise SystemExit(main())
 
