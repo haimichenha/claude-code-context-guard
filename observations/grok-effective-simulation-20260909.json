@@ -1,0 +1,48 @@
+{
+  "date": "2026-09-09",
+  "requested_model": "grok-4.6",
+  "real_claude_user_settings": true,
+  "bare": false,
+  "mcp_disabled_for_scope": true,
+  "private_project_data_used": false,
+  "scope": "synthetic CSV implementation with frozen host acceptance",
+  "all_acceptance_passed": false,
+  "stages": [
+    {
+      "stage": 1,
+      "tool_calls": 14,
+      "noop_denials": 2,
+      "cli_subtype": "error_max_turns",
+      "host_status": "failed_execution",
+      "accepted": false,
+      "cli_reported_cost_usd": 0.133293
+    },
+    {
+      "stage": 2,
+      "tool_calls": 11,
+      "noop_denials": 0,
+      "cli_subtype": "success",
+      "host_status": "failed_acceptance",
+      "accepted": false,
+      "cli_reported_cost_usd": 0.12306399999999999
+    },
+    {
+      "stage": 3,
+      "tool_calls": 9,
+      "noop_denials": 3,
+      "cli_subtype": "success",
+      "host_status": "blocked_no_progress",
+      "accepted": false,
+      "cli_reported_cost_usd": 0.12270400000000001
+    }
+  ],
+  "host_criteria": {
+    "fixture": "passed",
+    "integer_qty": "failed",
+    "finite_values": "failed",
+    "nonnegative_values": "passed"
+  },
+  "bounds": "14/12/10 tool-turn limits; independent 360/300/240 second timeouts; no further retries after acceptance failure",
+  "window_observed_in_model_usage": 1000000,
+  "conclusion": "Window and stop protections work in this environment; model task correctness is not fully reliable and must remain host-verified."
+}

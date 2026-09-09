@@ -277,8 +277,73 @@ def write_state(actions: list[str]):
     state.update({"updated_at":datetime.now().isoformat(timespec="seconds"),"target_model":TARGET_MODEL,"experimental_disabled":state_disabled(),"virtual_context_window":target_window(),"auto_compact_pct_override":target_pct(),"claude_code_version":get_cli_version(),"claude_code_install_mode":claude_install_mode(),"cli_patch_available":CLI_JS.exists(),"last_actions":actions[-20:]})
     dump_json(STATE_FILE,state)
 
+def native_main(args) -> int:
+    cfg = json.loads(SETTINGS_JSON.read_text(encoding='utf-8-sig'))
+    state = load_json(STATE_FILE)
+    if args.enable_experimental and args.disable_experimental:
+        raise ValueError('enable and disable cannot be combined')
+    disabled = bool(state.get('experimental_disabled', False))
+    if args.enable_experimental:
+        disabled = False
+    if args.disable_experimental:
+        disabled = True
+    window = getattr(args, 'window', None)
+    pct = getattr(args, 'pct', None)
+    if window is None:
+        window = state.get('requested_window', SAFE_WINDOW if disabled else EXPERIMENTAL_WINDOW)
+    if pct is None:
+        pct = state.get('requested_pct', None if disabled else int(EXPERIMENTAL_PCT))
+    if not isinstance(window, int) or not 100_000 <= window <= 1_200_000:
+        raise ValueError('window must be 100000..1200000')
+    if pct is not None and (not isinstance(pct, int) or not 1 <= pct <= 99):
+        raise ValueError('pct must be 1..99')
+    if args.disable_experimental and getattr(args, 'window', None) is None:
+        window, pct = SAFE_WINDOW, None
+    backup_root = CLAUDE_DIR / 'backups' / ('native-context-' + now_stamp())
+    before = json.dumps(cfg, ensure_ascii=False, sort_keys=True)
+    cfg['autoCompactWindow'] = window
+    env = cfg.setdefault('env', {})
+    env['CLAUDE_CODE_AUTO_COMPACT_WINDOW'] = str(window)
+    # Native 2.1.263 qL honors this for custom model names without disabling
+    # compaction. This declares client capacity, NOT server capacity.
+    env['CLAUDE_CODE_MAX_CONTEXT_TOKENS'] = str(window)
+    if pct is None:
+        env.pop('CLAUDE_AUTOCOMPACT_PCT_OVERRIDE', None)
+    else:
+        env['CLAUDE_AUTOCOMPACT_PCT_OVERRIDE'] = str(pct)
+    if before != json.dumps(cfg, ensure_ascii=False, sort_keys=True):
+        backup_file(SETTINGS_JSON, backup_root)
+        dump_json(SETTINGS_JSON, cfg)
+    values = {'CLAUDE_CODE_AUTO_COMPACT_WINDOW': str(window),
+              'CLAUDE_CODE_MAX_CONTEXT_TOKENS': str(window),
+              'CLAUDE_AUTOCOMPACT_PCT_OVERRIDE': '' if pct is None else str(pct)}
+    cmd = '@echo off\r\n' + ''.join('set '+key+'='+value+'\r\n' for key,value in values.items())
+    ps = ''.join("$env:"+key+"='"+value+"'\n" if value else 'Remove-Item Env:'+key+' -ErrorAction SilentlyContinue\n' for key,value in values.items())
+    for file, content in ((ENV_CMD, cmd), (ENV_PS1, ps)):
+        data = content.encode('utf-8')
+        if not file.is_file() or file.read_bytes() != data:
+            backup_file(file, backup_root)
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_bytes(data)
+    backup_file(STATE_FILE, backup_root)
+    state.update({'updated_at': datetime.now().isoformat(timespec='seconds'),
+                  'mode': 'native-custom-model-window', 'requested_window': window, 'requested_pct': pct,
+                  'experimental_disabled': disabled, 'claude_code_install_mode': 'native-binary',
+                  'claude_code_version': get_cli_version(), 'cli_patch_available': False,
+                  'virtual_context_window': window, 'native_enforcement': 'query-runtime-to-verify',
+                  'target_model': cfg.get('model'), 'auto_compact_pct_override': None if pct is None else str(pct),
+                  'last_actions': ['preserved selected context policy and custom-model capacity declaration; no executable or provider DB changes']})
+    dump_json(STATE_FILE, state)
+    if not args.quiet:
+        print('[context-policy] requested window=' + str(window) + ' pct=' + str(pct))
+        print('- model/permissions/provider database unchanged; auto compaction not disabled')
+        print('- verify /autocompact and /context; backend capacity remains a separate test')
+    return 0
+
 def main() -> int:
-    ap=argparse.ArgumentParser(); ap.add_argument('--quiet',action='store_true'); ap.add_argument('--no-cli-patch',action='store_true'); ap.add_argument('--disable-experimental',action='store_true'); ap.add_argument('--enable-experimental',action='store_true'); args=ap.parse_args()
+    ap=argparse.ArgumentParser(); ap.add_argument('--quiet',action='store_true'); ap.add_argument('--no-cli-patch',action='store_true'); ap.add_argument('--disable-experimental',action='store_true'); ap.add_argument('--enable-experimental',action='store_true'); ap.add_argument('--window',type=int); ap.add_argument('--pct',type=int); args=ap.parse_args()
+    if claude_install_mode() == 'native-binary':
+        return native_main(args)
     state=load_json(STATE_FILE)
     if args.disable_experimental: state['experimental_disabled']=True; state['disabled_reason']='manual'; state['disabled_at']=datetime.now().isoformat(timespec='seconds'); dump_json(STATE_FILE,state)
     if args.enable_experimental:

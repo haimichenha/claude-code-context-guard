@@ -67,6 +67,14 @@ def main() -> int:
     else:
         passed &= ok("Claude Code install mode", False, f"missing {CLI} and {CLAUDE_EXE}")
 
+    if cli_text is None and CLAUDE_EXE.exists():
+        print("[DECLARED] autoCompactWindow=" + str(settings.get("autoCompactWindow", "auto/default")))
+        print("[DECLARED] pct_override=" + str(settings.get("env", {}).get("CLAUDE_AUTOCOMPACT_PCT_OVERRIDE", "default")))
+        print("[UNVERIFIED] Legacy JS patches, effective native window and provider context capacity are not verified.")
+        print("[INFO] Run verify-native-runtime.py --output <new-report.json> for actual client-window evidence; backend capacity remains separate.")
+        print("[RESULT]", "PARTIAL" if passed else "FAIL")
+        return 2 if passed else 1
+
     disabled = bool(state.get("experimental_disabled"))
     target_window = 1_000_000 if disabled else 1_200_000
     pct = None if disabled else 72.0

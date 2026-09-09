@@ -1,0 +1,16 @@
+{
+  "version": "2.1.263",
+  "exe_sha256": "0b35df94c1307004f07b738390bfef8dfca5e9af29aaf6517f305bf086b95b03",
+  "read_only_native_findings": {
+    "auto_compact_parser_cap_1m_anchor_count": 1,
+    "effective_window_uses_min_model_config": 1
+  },
+  "requested_window": 1200000,
+  "requested_pct": 72,
+  "native_effective_window": "not yet verified or patched",
+  "server_context_capacity": "not measured",
+  "binary_changed": false,
+  "next_action": "Adapt and test native effective-window cap without disabling compaction; do not roll back user-requested configuration.",
+  "superseded_by": "observations/native-runtime-1m-20260909.json",
+  "note": "Earlier 1.2M investigation; user later selected 1M/80%, verified by native commands without executable patching."
+}

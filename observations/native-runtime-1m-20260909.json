@@ -1,0 +1,25 @@
+{
+  "client_window_verified": true,
+  "expected_window": 1000000,
+  "model_argument": "opus",
+  "compression_pct_configured": "80",
+  "disable_compact_set": null,
+  "disable_auto_compact_set": null,
+  "exe_sha256": "0b35df94c1307004f07b738390bfef8dfca5e9af29aaf6517f305bf086b95b03",
+  "queries": [
+    {
+      "command": "/autocompact",
+      "result": "Auto-compact window: 1m tokens (from CLAUDE_CODE_AUTO_COMPACT_WINDOW)\nAuto-compact summarizes the conversation when context usage approaches this limit. The actual threshold is the minimum of this setting and your model's maximum context window.\nThe auto setting picks a window tuned for your model and is strongly recommended for the best cost and performance.\nOverriding auto may result in high token usage, especially when resuming long sessions.",
+      "api_ms": 0,
+      "cost_usd": 0
+    },
+    {
+      "command": "/context",
+      "result": "## Context Usage\n\n**Model:** grok-4.6  \n**Tokens:** 29 / 1m (0%)\n\n### Estimated usage by category\n\n| Category | Tokens | Percentage |\n|----------|--------|------------|\n| System prompt | 28 | 0.0% |\n| Messages | 1 | 0.0% |\n| Free space | 967k | 96.7% |\n| Autocompact buffer | 33k | 3.3% |\n\n",
+      "api_ms": 0,
+      "cost_usd": 0
+    }
+  ],
+  "server_capacity_verified": false,
+  "large_transcript_compaction_tested": false
+}
