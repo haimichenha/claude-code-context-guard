@@ -5,6 +5,7 @@ import argparse
 import hashlib
 import json
 import os
+import shlex
 from pathlib import Path
 import sys
 import tempfile
@@ -40,6 +41,15 @@ def decide(event, state_dir):
     # Reject before creation, including renamed vNN/final output paths.
     if path.suffix.lower() in binary_formats:
         reason = 'ARTIFACT_FORMAT: Write emits text and cannot directly create this binary/package format. Do not rename Markdown, XML or base64 text to this extension. Write a generator script (.py/.ps1) or use a real document/build tool, execute it, then independently verify the output format and requested changes. Do not retry the same operation under another filename.'
+        if path.suffix.lower() == '.docx':
+            helper = Path.home() / '.claude/skills/grok-task-execution/scripts/inspect-docx-sources.py'
+            if helper.is_file():
+                # Returned directly with this failed tool call, so even an old
+                # session receives fresh executable recovery guidance.
+                command = ' '.join(shlex.quote(str(value).replace(chr(92), '/')) for value in [Path(sys.executable), helper])
+                command += ' --root ' + shlex.quote(str(path.parent).replace(chr(92), '/')) + ' --target ' + shlex.quote(str(path).replace(chr(92), '/'))
+                reason += ' REQUIRED NEXT ACTION: call Bash with this read-only diagnosis command: ' + command + '. Use valid_sources from its actual output; a missing vNN file is not a template. Do not repeat Write or update a README/version list. After selecting the genuine source, use a real Word tool on a new copy and verify the requested edit.'
+
     else:
         try:
             if not path.is_file() or path.stat().st_size > MAX_BYTES:

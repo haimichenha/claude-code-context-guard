@@ -1,0 +1,57 @@
+{
+  "date": "2026-09-10",
+  "test": "synthetic recovery from real installed ARTIFACT_FORMAT feedback",
+  "prior_bad_write": "simulated by invoking installed guard, not an actual CLI write",
+  "private_document_used": false,
+  "model": "grok-4.6",
+  "execution_mode": "real Claude user settings/hooks",
+  "classification": {
+    "accepted": true,
+    "tool_calls": [
+      "Bash",
+      "Bash",
+      "Bash"
+    ],
+    "noop_denials": 0,
+    "invalid_format_denials": 0,
+    "failed_command_repeat_denials": 0,
+    "cli_success": true,
+    "status": "accepted",
+    "reason": "CLI ended normally and all host acceptance criteria passed"
+  },
+  "verification": {
+    "reviewer": "host",
+    "exit_code": 0,
+    "protected_inputs_unchanged": true,
+    "required_criteria": [
+      "package_structure",
+      "exact_text_preserved",
+      "only_target_bold",
+      "italic_preserved",
+      "paragraph_styles_preserved"
+    ],
+    "criteria": {
+      "package_structure": "passed",
+      "exact_text_preserved": "passed",
+      "only_target_bold": "passed",
+      "italic_preserved": "passed",
+      "paragraph_styles_preserved": "passed"
+    },
+    "errors": [],
+    "layout_verified": false,
+    "scope": "synthetic Word structure and run-level edits only"
+  },
+  "num_turns": 4,
+  "cost_usd_reported_by_cli": 0.062505,
+  "stream_sha256": "57e67ec3129de1ab15baa2aae70a71170937d28ae1fbb0dda4bc965eae399c3b",
+  "steps": [
+    "diagnose genuine DOCX sources",
+    "execute existing tested document tool",
+    "run frozen independent verifier and finish"
+  ],
+  "limits": [
+    "trusted formatting helper supplied by host",
+    "does not prove old real conversation has recovered",
+    "no private document modifications or visual layout acceptance"
+  ]
+}

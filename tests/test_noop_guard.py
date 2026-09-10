@@ -2,6 +2,8 @@ import importlib.util
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
+import shlex
 spec=importlib.util.spec_from_file_location('guard',Path(__file__).resolve().parents[1]/'scripts/guard-noop-write.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 class GuardTests(unittest.TestCase):
@@ -42,6 +44,20 @@ class GuardTests(unittest.TestCase):
         p=self.root/'new.docx';self.event['tool_input']={'file_path':str(p),'content':'# Fake Word'}
         r=m.decide(self.event,self.root/'state')
         self.assertIn('ARTIFACT_FORMAT:',r['hookSpecificOutput']['permissionDecisionReason']);self.assertFalse(p.exists())
+    def test_docx_recovery_command_quotes_unicode_and_shell_chars(self):
+        home=self.root/'fake_home'
+        helper=home/'.claude/skills/grok-task-execution/scripts/inspect-docx-sources.py'
+        helper.parent.mkdir(parents=True);helper.write_text('# fixture')
+        target=self.root/"中文 '$x; test"/'v47.docx'
+        self.event['tool_input']={'file_path':str(target),'content':'# fake'}
+        with patch.object(m.Path,'home',return_value=home):
+            r=m.decide(self.event,self.root/'state')
+        reason=r['hookSpecificOutput']['permissionDecisionReason']
+        command=reason.split('read-only diagnosis command: ',1)[1].split('. Use valid_sources',1)[0]
+        args=shlex.split(command)
+        self.assertEqual(args[-1],str(target).replace(chr(92),'/'))
+        self.assertEqual(args[-3],str(target.parent).replace(chr(92),'/'))
+        self.assertIn('中文',command)
     def test_changing_binary_filename_cannot_evade(self):
         for n in ['v48.docx','v49.docx']:
             self.event['tool_input']={'file_path':str(self.root/n),'content':'# fake '+n}

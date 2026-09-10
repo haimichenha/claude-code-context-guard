@@ -33,3 +33,10 @@ Hook协议依据：https://code.claude.com/docs/en/hooks 。PostToolUseFailure�
 补丁生成时发现换行转义错误，已从哈希校验备份恢复该文件，修正生成器并增加真实 PowerShell AST 回归后重装。
 实际执行修复后的 stability -Quiet，settings、两份环境文件均保持100万/80%；再次本地 /autocompact 与 /context 查询确认1m，API耗时/费用均为0。
 见 observations/native-runtime-1m-20260910.json。仍不代表服务端容量或实际长会话压缩触发已测试。
+
+## 后续：旧会话仍直接 Write DOCX
+用户的新日志证明，泛化规则和停止机制仍不足以引导其实际会话。
+只读检查发现真实DOCX源文件存在，而旧会话尝试的版本目标已不在目录；不根据历史版本清单重建文件。
+现在ARTIFACT_FORMAT会随工具错误直接给出可执行的只读源文件诊断命令，因此不只依赖会话启动时加载的规则。命令对中文和shell特殊字符有回归测试，不输出文档正文、不修改文件。
+合成恢复实测：把实际安装的guard产生的错误消息交给真实Grok/Claude，随后完成源文件诊断、可信工具加粗、固定验收三次Bash调用，4轮正常结束，5项检查通过。之前错误Write由夹具模拟，不能冒充此次CLI自然触发；可信加粗工具也不是Grok独立实现。
+见 observations/grok-docx-recovery-20260910.json。离线测试更新为40项guard＋42项技能。没有关闭格式拦截，尚未验证用户旧会话实际恢复，真实简历未修改。
