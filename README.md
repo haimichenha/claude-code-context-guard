@@ -1,5 +1,7 @@
 # Claude Code Context Guard
 
+> **2026-09-10 执行修复**：新增产物格式保护、失败命令止损和真实工作目录锚定。工具辅助Word任务实测通过，但自由实现仍有失败；见 [本轮证据与边界](GROK-ARTIFACT-REPAIR-20260910.md)。
+
 > **2026-09-09 native实测**：新增100万窗口／80%压缩配置、运行时查询与无效Write保护。客户端1m已实测；Grok完整任务仍有验收失败，不能宣称稳定无人监督完成。请先读 [实测状态与安装](NATIVE-REPAIR-20260909.md)。
 
 A small Windows-oriented guard for improving Claude Code context behavior without committing secrets or local databases.

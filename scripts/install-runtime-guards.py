@@ -42,6 +42,14 @@ def main():
             entry={'hooks':[{'type':'command','command':hook_cmd,'timeout':5}]}
             if event_name == 'PostToolUse':entry['matcher']='Write'
             entries.append(entry)
+    failed_cmd='"'+str(Path(sys.executable).resolve())+'" "'+str(claude/'scripts/guard-failed-command.py')+'"'
+    for event_name,matcher in [('PreToolUse','Bash'),('PostToolUseFailure','Bash'),('PostToolUse','Write|Edit|Bash'),('UserPromptSubmit',None)]:
+        entries=hooks.setdefault(event_name,[])
+        if not isinstance(entries,list):raise ValueError(event_name+' is not a list')
+        if not any('guard-failed-command.py' in h.get('command','') for entry in entries for h in entry.get('hooks',[])):
+            entry={'hooks':[{'type':'command','command':failed_cmd,'timeout':5}]}
+            if matcher:entry['matcher']=matcher
+            entries.append(entry)
     changes={} if cfg == before else {settings:(json.dumps(cfg,ensure_ascii=False,indent=2)+'\n').encode('utf-8')}
     # Preserve local customizations outside the specific compatibility blocks.
     ensure=claude/'scripts/ensure-claude-context-policy.py'
@@ -73,6 +81,24 @@ def main():
         if end not in txt:raise ValueError('unknown installed validator anchor')
         block=begin+new.split(begin,1)[1].split(end,1)[0]
         changes[validator]=txt.replace(end,block+end,1).encode('utf-8')
+    # The legacy stability wrapper ran AFTER the policy updater and rewrote
+    # window/pct to 1.2m/72. Give the updater sole ownership of context values.
+    stability=claude/'scripts/claude-stability-repair.ps1'
+    if stability.is_file():
+        txt=stability.read_text(encoding='utf-8-sig')
+        marker='# CONTEXT_POLICY_SINGLE_OWNER'
+        if marker not in txt:
+            begin='# 保持 1200000 上下文，与 Claude managed-1.2m 策略一致。'
+            end='if ($KillOrphans) {'
+            if txt.count(begin)!=1 or txt.count(end)!=1:raise ValueError('unknown stability wrapper; refusing speculative patch')
+            a=txt.index(begin);z=txt.index(end,a)
+            old=txt[a:z]
+            if 'CLAUDE_AUTOCOMPACT_PCT_OVERRIDE=72' not in old or 'autoCompactWindow' not in old:raise ValueError('stability preimage mismatch')
+            py=str(Path(sys.executable).resolve()).replace("'","''")
+            replacement=marker+"\n$PolicyScript = Join-Path $HomeDir '.claude\\scripts\\ensure-claude-context-policy.py'\n& '"+py+"' $PolicyScript --quiet --no-cli-patch\nif ($LASTEXITCODE -ne 0) { throw 'Context policy update failed; refusing legacy window fallback.' }\n\n"
+            txt=(txt[:a]+replacement+txt[z:]).replace('$Window = 1200000\n','',1)
+            changes[stability]=txt.encode('utf-8-sig')
+    changes[claude/'scripts/guard-failed-command.py']=(REPO/'scripts/guard-failed-command.py').read_bytes()
     changes[claude/'scripts/guard-noop-write.py']=(REPO/'scripts/guard-noop-write.py').read_bytes()
     changes[claude/'scripts/verify-native-runtime.py']=(REPO/'scripts/verify-native-runtime.py').read_bytes()
     if md.is_file():
@@ -86,6 +112,15 @@ def main():
             txt=txt.replace(old_guard,'Continuous execution means progress toward the user goal, not continuous tool calls or merely different command strings. Before each step identify the unmet criterion, missing evidence, intended action and expected observable result. Use the prior result to choose targeted read/query, modification, test/render/reconciliation, or the next unfinished criterion. Count only goal-relevant artifact changes, new evidence, actual validation or isolated blockers as progress. Explain changed conditions or a bounded transient failure before retrying. Memory rewrites, paraphrases and timestamp changes are not progress. If the no-op guard stops a turn, inspect and change the plan; never rephrase the same write to evade the guard.')
         if marker not in txt:
             txt+='\n'+marker+'\nContinuous execution means progress toward the user goal, not continuous tool calls or merely different command strings. Before each step identify the unmet criterion, missing evidence, intended action and expected observable result. Use the prior result to choose targeted read/query, modification, test/render/reconciliation, or the next unfinished criterion. Count only goal-relevant artifact changes, new evidence, actual validation or isolated blockers as progress. Explain changed conditions or a bounded transient failure before retrying. Memory rewrites, paraphrases and timestamp changes are not progress. If the no-op guard stops a turn, inspect and change the plan; never rephrase the same write to evade the guard.\n'
+        artifact_marker='<!-- GROK_ARTIFACT_FORMAT_GUARD -->'
+        if artifact_marker not in txt:
+            txt+='\n'+artifact_marker+'\nWrite emits text, not a DOCX/PDF/DLL/AEX serializer. For binary/package deliverables, write and execute a real generator/build script; never put Markdown, XML or base64 directly under a binary extension. Preserve genuine source files and independently check output structure, requested content/format changes and rendering where required. On ARTIFACT_FORMAT, switch to the correct generation tool, not another filename. A passed structure check or a stopped loop is not completed user work.\n'
+        cwd_marker='<!-- GROK_WORKSPACE_ANCHOR -->'
+        if cwd_marker not in txt:
+            txt+='\n'+cwd_marker+'\nUse the actual cwd or the explicit user-approved project root, confirmed by pwd/Get-Location/os.getcwd(). ~/.claude/projects/<encoded-name> is session storage, NOT the source workspace. Never decode its name into a guessed path or mkdir a substitute work directory. On missing paths, inspect the actual cwd once and resolve the specified input there. On permission denial, stop that operation; do not repeat or evade it.\n'
+        close_marker='<!-- GROK_VERIFIED_CLOSEOUT -->'
+        if close_marker not in txt:
+            txt+='\n'+close_marker+'\nPrefer an already-tested task-specific tool when it matches the request; do not regenerate the same algorithm unnecessarily. Once all frozen acceptance criteria pass, finish or advance to the next unmet task; repeated inspections are not new work. Use absolute paths or the confirmed cwd. Chain directory changes with failure-stop semantics (cd ... && command), never continue after a failed cd.\n'
         changes[md]=txt.encode('utf-8')
     for p in src.rglob('*'):
         if p.is_file() and '__pycache__' not in p.parts and p.suffix!='.pyc':

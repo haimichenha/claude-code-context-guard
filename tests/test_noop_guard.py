@@ -38,6 +38,21 @@ class GuardTests(unittest.TestCase):
         m.decide(self.event,self.root/'state')
         m.decide({'session_id':'session-1','hook_event_name':'UserPromptSubmit'},self.root/'state')
         self.assertNotIn('continue',m.decide(self.event,self.root/'state'))
+    def test_fake_docx_blocked_before_creation(self):
+        p=self.root/'new.docx';self.event['tool_input']={'file_path':str(p),'content':'# Fake Word'}
+        r=m.decide(self.event,self.root/'state')
+        self.assertIn('ARTIFACT_FORMAT:',r['hookSpecificOutput']['permissionDecisionReason']);self.assertFalse(p.exists())
+    def test_changing_binary_filename_cannot_evade(self):
+        for n in ['v48.docx','v49.docx']:
+            self.event['tool_input']={'file_path':str(self.root/n),'content':'# fake '+n}
+            r=m.decide(self.event,self.root/'state')
+        self.assertFalse(r['continue'])
+    def test_generator_script_is_not_blocked(self):
+        self.event['tool_input']={'file_path':str(self.root/'build_document.py'),'content':'from docx import Document'}
+        self.assertEqual(m.decide(self.event,self.root/'state'),{})
+    def test_text_pretending_to_be_plugin_blocked(self):
+        self.event['tool_input']={'file_path':str(self.root/'fake.aex'),'content':'MZ something'}
+        self.assertEqual(m.decide(self.event,self.root/'state')['hookSpecificOutput']['permissionDecision'],'deny')
     def test_missing_session(self):
         del self.event['session_id'];self.assertEqual(m.decide(self.event,self.root/'state')['hookSpecificOutput']['permissionDecision'],'deny')
 if __name__=='__main__': unittest.main()

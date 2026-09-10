@@ -1,0 +1,210 @@
+{
+  "date": "2026-09-10",
+  "configured_model": "grok-4.6",
+  "upstream_provider_independently_verified": false,
+  "native_cli": "2.1.263",
+  "execution_mode": "real Claude CLI user settings and hooks, not bare",
+  "cases": [
+    {
+      "case": "unanchored",
+      "classification": {
+        "accepted": false,
+        "tool_calls": [
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash"
+        ],
+        "noop_denials": 0,
+        "invalid_format_denials": 0,
+        "failed_command_repeat_denials": 0,
+        "cli_success": false,
+        "status": "failed_execution",
+        "reason": "error_max_turns"
+      },
+      "cli_subtype": "error_max_turns",
+      "num_turns": 13,
+      "cli_reported_cost_usd": 0.12592650000000002,
+      "context_windows": {
+        "grok-4.6": 1000000
+      },
+      "host_verification": {},
+      "stream_sha256": "4b24a75f79830f96113ce28338c5931a2270e8ef897781d367f3a4882c1a48e9"
+    },
+    {
+      "case": "anchored_simple",
+      "classification": {
+        "accepted": false,
+        "tool_calls": [
+          "Bash",
+          "Bash",
+          "Read",
+          "Bash",
+          "Write",
+          "Bash",
+          "Read",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Write",
+          "Bash"
+        ],
+        "noop_denials": 1,
+        "invalid_format_denials": 0,
+        "failed_command_repeat_denials": 0,
+        "cli_success": false,
+        "status": "failed_execution",
+        "reason": "error_max_turns"
+      },
+      "cli_subtype": "error_max_turns",
+      "num_turns": 13,
+      "cli_reported_cost_usd": 0.11430599999999999,
+      "context_windows": {
+        "grok-4.6": 1000000
+      },
+      "host_verification": {
+        "reviewer": "host",
+        "exit_code": 0,
+        "protected_inputs_unchanged": true,
+        "required_criteria": [
+          "package_structure",
+          "exact_text_preserved",
+          "only_target_bold",
+          "italic_preserved",
+          "paragraph_styles_preserved"
+        ],
+        "criteria": {
+          "package_structure": "passed",
+          "exact_text_preserved": "passed",
+          "only_target_bold": "passed",
+          "italic_preserved": "passed",
+          "paragraph_styles_preserved": "passed"
+        },
+        "errors": [],
+        "layout_verified": false,
+        "scope": "synthetic Word structure and run-level edits only"
+      },
+      "stream_sha256": "23aa7064f97eedbc7727bc336673e5ca76aff2d4349ddd57fb8aff3989609d88"
+    },
+    {
+      "case": "cross_run_generated_code",
+      "classification": {
+        "accepted": false,
+        "tool_calls": [
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Bash",
+          "Write",
+          "Bash",
+          "Bash",
+          "Read",
+          "Write"
+        ],
+        "noop_denials": 0,
+        "invalid_format_denials": 0,
+        "failed_command_repeat_denials": 0,
+        "cli_success": false,
+        "status": "failed_execution",
+        "reason": "error_max_turns"
+      },
+      "cli_subtype": "error_max_turns",
+      "num_turns": 11,
+      "cli_reported_cost_usd": 0.09648999999999999,
+      "context_windows": {
+        "grok-4.6": 1000000
+      },
+      "host_verification": {
+        "reviewer": "host",
+        "exit_code": 1,
+        "protected_inputs_unchanged": true,
+        "required_criteria": [
+          "package_structure",
+          "exact_text_preserved",
+          "only_target_bold",
+          "italic_preserved",
+          "paragraph_styles_preserved"
+        ],
+        "criteria": {
+          "package_structure": "passed",
+          "exact_text_preserved": "passed",
+          "only_target_bold": "failed",
+          "italic_preserved": "failed",
+          "paragraph_styles_preserved": "failed"
+        },
+        "errors": [
+          "AssertionError: "
+        ],
+        "layout_verified": false,
+        "scope": "synthetic Word structure and run-level edits only"
+      },
+      "stream_sha256": "364786d7d52e906578ce8cbe4937bf66724e9fcc709fd3cef69d143986044471"
+    },
+    {
+      "case": "tested_tool_assisted",
+      "classification": {
+        "accepted": true,
+        "tool_calls": [
+          "Bash",
+          "Bash",
+          "Bash"
+        ],
+        "noop_denials": 0,
+        "invalid_format_denials": 0,
+        "failed_command_repeat_denials": 0,
+        "cli_success": true,
+        "status": "accepted",
+        "reason": "CLI ended normally and all host acceptance criteria passed"
+      },
+      "cli_subtype": "success",
+      "num_turns": 4,
+      "cli_reported_cost_usd": 0.095768,
+      "context_windows": {
+        "grok-4.6": 1000000
+      },
+      "host_verification": {
+        "reviewer": "host",
+        "exit_code": 0,
+        "protected_inputs_unchanged": true,
+        "required_criteria": [
+          "package_structure",
+          "exact_text_preserved",
+          "only_target_bold",
+          "italic_preserved",
+          "paragraph_styles_preserved"
+        ],
+        "criteria": {
+          "package_structure": "passed",
+          "exact_text_preserved": "passed",
+          "only_target_bold": "passed",
+          "italic_preserved": "passed",
+          "paragraph_styles_preserved": "passed"
+        },
+        "errors": [],
+        "layout_verified": false,
+        "scope": "synthetic Word structure and run-level edits only"
+      },
+      "stream_sha256": "f1e24769258ef7ae3975cc55b033be308e4d394b803cf04c117615828a2b5631"
+    }
+  ],
+  "roles": {
+    "host": "test fixtures, frozen verifier, safety hooks and tested phrase tool",
+    "grok": "generated faulty or partial code in early cases; in tool-assisted case selected/executed actual commands and ended normally"
+  },
+  "limits": [
+    "one tool-assisted passing case is not general autonomous stability",
+    "no real resume modified or rendered",
+    "cross-run early verifier stops at first assertion; later failed labels mean not reached, not independently observed corruption",
+    "Glare external build task NOT executed: derived binary metadata transmission requires explicit approval",
+    "no model/account rotation; no context-window reduction"
+  ]
+}

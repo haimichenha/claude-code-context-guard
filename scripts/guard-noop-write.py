@@ -35,15 +35,20 @@ def decide(event, state_dir):
         if not cwd or not Path(cwd).is_absolute():
             return {}
         path = Path(cwd) / path
-    try:
-        if not path.is_file() or path.stat().st_size > MAX_BYTES:
+    binary_formats = {'.docx', '.docm', '.xlsx', '.xlsm', '.pptx', '.pptm', '.pdf', '.dll', '.aex', '.exe'}
+    # Claude's Write tool emits UTF-8 text. It is not a binary/document serializer.
+    # Reject before creation, including renamed vNN/final output paths.
+    if path.suffix.lower() in binary_formats:
+        reason = 'ARTIFACT_FORMAT: Write emits text and cannot directly create this binary/package format. Do not rename Markdown, XML or base64 text to this extension. Write a generator script (.py/.ps1) or use a real document/build tool, execute it, then independently verify the output format and requested changes. Do not retry the same operation under another filename.'
+    else:
+        try:
+            if not path.is_file() or path.stat().st_size > MAX_BYTES:
+                return {}
+            if path.read_bytes() != content.encode('utf-8'):
+                return {}
+        except OSError:
             return {}
-        # Exact bytes only: intentional BOM/line-ending changes are not blocked.
-        if path.read_bytes() != content.encode('utf-8'):
-            return {}
-    except OSError:
-        return {}
-    reason = 'NO_PROGRESS: target already contains exactly these bytes. Do not repeat Write. Read back once, verify the actual deliverable, then advance to remaining work.'
+        reason = 'NO_PROGRESS: target already contains exactly these bytes. Do not repeat Write. Read back once, verify the actual deliverable, then advance to remaining work.'
     result = {'hookSpecificOutput': {'hookEventName': 'PreToolUse', 'permissionDecision': 'deny', 'permissionDecisionReason': reason}}
     session = event.get('session_id')
     if not isinstance(session, str) or not session:
@@ -67,7 +72,7 @@ def decide(event, state_dir):
         if os.path.exists(tmp):
             os.unlink(tmp)
     if count >= 2:
-        result.update({'continue': False, 'stopReason': 'Two no-op Writes without a successful intervening write were blocked, including across different files. Stopping this turn to prevent an unproductive loop. Resume with a new evidence-backed plan, not another identical write.'})
+        result.update({'continue': False, 'stopReason': 'Two invalid-format/no-op Writes without a successful intervening write were blocked, including across different files. Stopping this turn to prevent an unproductive loop. Resume with a new evidence-backed plan, not another identical write.'})
     return result
 
 def main():

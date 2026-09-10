@@ -61,3 +61,7 @@ python ./scripts/verify-native-runtime.py --output '<新的本地报告路径>.j
 - 仓库不包含原始会话、令牌、私有简历、数据库、厂商exe或失败生成的程序。
 
 参考：[Claude hooks](https://code.claude.com/docs/en/hooks)、[设置与署名](https://code.claude.com/docs/en/configuration#attribution-settings)。本机版本的自定义模型容量行为以实际CLI查询为证，其他版本须重测。
+
+## 2026-09-10 后续修复
+
+后来发现独立的旧 stability 启动脚本仍会在 updater 之后覆盖窗口与环境文件；已定位并修复，不把9月9日仅验证 updater 的结果扩大为整个启动链可靠。见 [产物与启动链修复](GROK-ARTIFACT-REPAIR-20260910.md)。
