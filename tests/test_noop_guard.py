@@ -4,6 +4,8 @@ import tempfile
 import unittest
 from unittest.mock import patch
 import shlex
+import zipfile
+import json
 spec=importlib.util.spec_from_file_location('guard',Path(__file__).resolve().parents[1]/'scripts/guard-noop-write.py')
 m=importlib.util.module_from_spec(spec);spec.loader.exec_module(m)
 class GuardTests(unittest.TestCase):
@@ -69,6 +71,45 @@ class GuardTests(unittest.TestCase):
     def test_text_pretending_to_be_plugin_blocked(self):
         self.event['tool_input']={'file_path':str(self.root/'fake.aex'),'content':'MZ something'}
         self.assertEqual(m.decide(self.event,self.root/'state')['hookSpecificOutput']['permissionDecision'],'deny')
+    def seed_recovery(self):
+        source=self.root/'source.docx'
+        with zipfile.ZipFile(source,'w') as z:
+            for name in ['[Content_Types].xml','_rels/.rels','word/document.xml']:z.writestr(name,'PRIVATE_TEXT')
+        e=dict(self.event,cwd=str(self.root),tool_input={'file_path':str(self.root/'v47.docx'),'content':'# PRIVATE_TEXT'})
+        m.decide(e,self.root/'state')
+        return source
+    def test_continue_automatically_diagnoses_docx(self):
+        source=self.seed_recovery();before=source.read_bytes()
+        r=m.decide({'session_id':'session-1','hook_event_name':'UserPromptSubmit','cwd':str(self.root),'prompt':'继续'},self.root/'state')
+        context=r['hookSpecificOutput']['additionalContext']
+        self.assertIn('AUTO_DOCX_RECOVERY',context);self.assertIn('source.docx',context)
+        self.assertNotIn('PRIVATE_TEXT',context);self.assertEqual(source.read_bytes(),before)
+        self.assertFalse((self.root/'v47.docx').exists())
+    def test_recovery_state_has_paths_not_document_contents(self):
+        self.seed_recovery();state=next((self.root/'state').glob('*.json')).read_text()
+        self.assertIn('docx_recovery',state);self.assertNotIn('PRIVATE_TEXT',state)
+    def test_unrelated_task_not_hijacked(self):
+        self.seed_recovery()
+        r=m.decide({'session_id':'session-1','hook_event_name':'UserPromptSubmit','cwd':str(self.root),'prompt':'修复机器人串口'},self.root/'state')
+        self.assertEqual(r,{})
+    def test_new_task_clears_stale_recovery_before_later_continue(self):
+        self.seed_recovery()
+        e={'session_id':'session-1','hook_event_name':'UserPromptSubmit','cwd':str(self.root),'prompt':'删除另一个文档，不再加粗'}
+        self.assertEqual(m.decide(e,self.root/'state'),{})
+        self.assertEqual(m.decide(dict(e,prompt='继续'),self.root/'state'),{})
+    def test_other_workspace_not_injected(self):
+        self.seed_recovery()
+        r=m.decide({'session_id':'session-1','hook_event_name':'UserPromptSubmit','cwd':str(self.root/'other'),'prompt':'继续'},self.root/'state')
+        self.assertEqual(r,{})
+    def test_successful_generator_write_retains_recovery(self):
+        self.seed_recovery()
+        m.decide(dict(self.event,hook_event_name='PostToolUse'),self.root/'state')
+        r=m.decide({'session_id':'session-1','hook_event_name':'UserPromptSubmit','cwd':str(self.root),'prompt':'继续'},self.root/'state')
+        self.assertIn('AUTO_DOCX_RECOVERY',r['hookSpecificOutput']['additionalContext'])
+    def test_missing_valid_source_does_not_invent_one(self):
+        source=self.seed_recovery();source.write_bytes(b'# fake')
+        r=m.decide({'session_id':'session-1','hook_event_name':'UserPromptSubmit','cwd':str(self.root),'prompt':'继续'},self.root/'state')
+        self.assertIn('"docx_package_candidates": []',r['hookSpecificOutput']['additionalContext'])
     def test_missing_session(self):
         del self.event['session_id'];self.assertEqual(m.decide(self.event,self.root/'state')['hookSpecificOutput']['permissionDecision'],'deny')
 if __name__=='__main__': unittest.main()
